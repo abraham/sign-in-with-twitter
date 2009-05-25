@@ -50,6 +50,7 @@ function sign_in_with_twitter_menu() {
  * Implementation of hook_form_alter().
  */
 function sign_in_with_twitter_form_alter(&$form, $form_state, $form_id) {
+  global $user;
   $key = variable_get('sign_in_with_twitter_consumer_key', FALSE);
   $secret = variable_get('sign_in_with_twitter_consumer_secret', FALSE);
   if(!empty($key) && !empty($secret)) {
@@ -67,9 +68,8 @@ function sign_in_with_twitter_form_alter(&$form, $form_state, $form_id) {
       $form['name']['#default_value'] = $_SESSION['sign_in_with_twitter_user']->screen_name;
       $form['#submit'][0] = 'sign_in_with_twitter_user_register_submit';
     }
-    global $user;
-    if ('user_profile_form' == $form_id) {
-      $tid = sign_in_with_twitter_user_get_uid_authmaps($user->uid);
+    $tid = sign_in_with_twitter_user_get_uid_authmaps($user->uid);
+    if ('user_profile_form' == $form_id && !empty($tid)) {
       unset($form['account']['pass']);
       $form['account']['sign_in_with_twitter_button'] = array(
         '#type' => 'item',
