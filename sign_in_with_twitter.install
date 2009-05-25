@@ -1,0 +1,45 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Install, update and uninstall functions for the sign_in_with_twitter module.
+ */
+
+/**
+ * Implementation of hook_requirements().
+ */
+function sign_in_with_twitter_requirements($phase) {
+  $requirements = array();
+  $t = get_t();
+  if ('runtime' === $phase) {
+    if (
+      variable_get('sign_in_with_twitter_consumer_key', FALSE) &&
+      variable_get('sign_in_with_twitter_consumer_secret', FALSE)
+    ) {
+      $requirements['consumer_tokens'] = array(
+        'title' => t('Sign in with Twitter'),
+        'value' => t('The consumer tokens are configured'),
+        'severity' => REQUIREMENT_OK,
+      );
+    }
+    else {
+      $requirements['consumer_tokens'] = array(
+        'title' => t('Sign in with Twitter'),
+        'value' => t('The consumer tokens are not configured'),
+        'description' => t('The consumer tokens are not <a href="@configured">configured</a>. Tokens can be obtained from <a href="http://twitter.com/oauth_clients">Twitter</a>.', array('@configured' => url('admin/settings/sign-in-with-twitter'))),
+        'severity' => REQUIREMENT_WARNING,
+      );
+    }
+  }
+  return $requirements;
+} // sign_in_with_twitter_requirements().
+
+/**
+ * Implementation of hook_install().
+ */
+function sign_in_with_twitter_install() {
+  drupal_set_message(st("Sign in with Twitter is installed and settings are available under !link",
+    array( '!link' => l('Administer > Site configuration > Sign in with Twitter ',  'admin/settings/sign-in-with-twitter' ) )
+  ));
+} // sign_in_with_twitter_install().

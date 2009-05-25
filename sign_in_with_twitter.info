@@ -1,0 +1,5 @@
+; $Id$
+name = Sign in with Twitter
+description = "User Twitter to authenticate users"
+core = 6.x
+package = Authentication
