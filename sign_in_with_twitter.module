@@ -108,7 +108,7 @@ function sign_in_with_twitter_form_user_profile_form_alter(&$form, $form_state) 
       '#title' => t('Sign in with Twitter'),
       '#value' => t("Currently associated with Twitter user: <span id='sign-in-with-twitter-id'>@id</span>", array('@id'=> $tid)),
     );
-    $js = '$.getJSON("http://twitter.com/users/show.json?user_id=9436992&callback=?", function(data){$("#sign-in-with-twitter-id").text(data.screen_name)})';
+    $js = '$.getJSON("http://twitter.com/users/show.json?user_id=9436992&callback=?", function(data){$("#sign-in-with-twitter-id").text("@"+data.screen_name)})';
     drupal_add_js($js, 'inline', 'footer');
   }
 }
