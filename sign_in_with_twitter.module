@@ -64,7 +64,7 @@ function sign_in_with_twitter_form_alter(&$form, $form_state, $form_id) {
         '#value' => theme('item_list', $items),
       );
     }
-    elseif ('user_register' == $form_id && 'register' == $_SESSION['sign_in_with_twitter_status']) {
+    elseif ('user_register' == $form_id && 'authenticated' == $_SESSION['sign_in_with_twitter_status']) {
       $form['name']['#default_value'] = $_SESSION['sign_in_with_twitter_user']->screen_name;
       $form['#submit'][0] = 'sign_in_with_twitter_user_register_submit';
     }
@@ -91,19 +91,27 @@ function sign_in_with_twitter_user_get_uid_authmaps($uid) {
 } // sign_in_with_twitter_user_get_uid_authmaps().
 
 /**
+ * Create OAuth object and onnect to the Twitter api.
+ */
+function _sign_in_with_twitter_make_api_call($api_path, $token = NULL, $goto = '<front>') {
+  $hmac_method = new OAuthSignatureMethod_HMAC_SHA1();
+  $consumer = _sign_in_with_twitter_create_oauthconsumer();
+  $req_req = OAuthRequest::from_consumer_and_token($consumer, $token, "GET", $api_path);
+  $req_req->sign_request($hmac_method, $consumer, $token);
+  $request = drupal_http_request($req_req);
+  //var_dump($request);
+  if (200 != $request->code) {
+    drupal_set_message('Could not connect to Twitter. Please try again later.', 'error');
+    drupal_goto($goto);
+  }
+    return $request->data;
+}
+
+/**
  * Callback to get OAuth request token from Twitter and redirect user to start authentication process.
  */
 function sign_in_with_twitter_redirect() {
-  $hmac_method = new OAuthSignatureMethod_HMAC_SHA1();
-  $consumer = _sign_in_with_twitter_create_oauthconsumer();
-  $req_req = OAuthRequest::from_consumer_and_token($consumer, NULL, "GET", 'https://twitter.com/oauth/request_token');
-  $req_req->sign_request($hmac_method, $consumer, NULL);
-  $request = drupal_http_request($req_req);
-  if (200 != $request->code) {
-    drupal_set_message('Could not connect to Twitter. Please try again later.', 'warning');
-    drupal_goto('<front>');
-  }
-  parse_str($request->data);
+  parse_str(_sign_in_with_twitter_make_api_call('https://twitter.com/oauth/request_token'));
   $_SESSION['sign_in_with_twitter_oauth_token'] = $oauth_token;
   $_SESSION['sign_in_with_twitter_oauth_token_secret'] = $oauth_token_secret;
   drupal_goto('https://twitter.com/oauth/authenticate?oauth_token='. $oauth_token);
@@ -114,22 +122,16 @@ function sign_in_with_twitter_redirect() {
  */
 function sign_in_with_twitter_callback() {
   global $user;
-  if (!empty($_GET['oauth_token']) && $_GET['oauth_token'] == $_SESSION['sign_in_with_twitter_oauth_token']) {
-    $request_token = new OAuthToken($_GET['oauth_token'], $_SESSION['sign_in_with_twitter_oauth_token_secret']);
-  }
-  else {
+  if (empty($_GET['oauth_token']) || $_GET['oauth_token'] != $_SESSION['sign_in_with_twitter_oauth_token']) {
     drupal_set_message('Something went wrong. Please try again.', 'warning');
     drupal_goto('<front>');
   }
-  $hmac_method = new OAuthSignatureMethod_HMAC_SHA1();
-  $consumer = _sign_in_with_twitter_create_oauthconsumer();
-  $req_req = OAuthRequest::from_consumer_and_token($consumer, $request_token, "GET", 'https://twitter.com/oauth/access_token');
-  $req_req->sign_request($hmac_method, $consumer, $request_token);
-  parse_str(drupal_http_request($req_req)->data);
+  $request_token = new OAuthToken($_GET['oauth_token'], $_SESSION['sign_in_with_twitter_oauth_token_secret']);
+  parse_str(_sign_in_with_twitter_make_api_call('https://twitter.com/oauth/access_token', $request_token));
   $_SESSION['sign_in_with_twitter_oauth_token'] = $oauth_token;
   $_SESSION['sign_in_with_twitter_oauth_token_secret'] = $oauth_token_secret;
   $user_token = new OAuthConsumer($oauth_token, $oauth_token_secret);
-  $twitter_user = _sign_in_with_twitter_verify_account_verify_credentials($user_token);
+  $twitter_user = json_decode(_sign_in_with_twitter_make_api_call('https://twitter.com/account/verify_credentials.json', $user_token));
   $external_id = user_external_load($twitter_user->id);
 
   // User is already logged in.
@@ -161,7 +163,7 @@ function sign_in_with_twitter_callback() {
     else {
       // register account.
 
-      $_SESSION['sign_in_with_twitter_status'] = 'register';
+      $_SESSION['sign_in_with_twitter_status'] = 'authenticated';
       $_SESSION['sign_in_with_twitter_user'] = $twitter_user;
       drupal_goto('user/register');
     }
@@ -177,23 +179,6 @@ function _sign_in_with_twitter_create_oauthconsumer() {
     variable_get('sign_in_with_twitter_consumer_secret', FALSE)
   );
 } // _sign_in_with_twitter_create_oauthconsumer().
-
-/**
- * Verify Twitter account credentials.
- */
-function _sign_in_with_twitter_verify_account_verify_credentials($user_token) {
-  $hmac_method = new OAuthSignatureMethod_HMAC_SHA1();
-  $consumer = _sign_in_with_twitter_create_oauthconsumer();
-  $req_req = OAuthRequest::from_consumer_and_token($consumer, $user_token, "GET", 'https://twitter.com/account/verify_credentials.json');
-  $req_req->sign_request($hmac_method, $consumer, $user_token);
-  $request = drupal_http_request($req_req);
-  if (200 != $request->code) {
-    return FALSE;
-  }
-  else {
-    return json_decode($request->data);
-  }
-} // _sign_in_with_twitter_verify_account_verify_credentials()
 
 /**
  * Process creating a Drupal user and logging them in.
