@@ -27,13 +27,13 @@ function sign_in_with_twitter_admin() {
   $form['sign_in_with_twitter_button'] = array(
     '#type' => 'radios',
     '#title' => t('Select sign in button'),
-    '#default_value' => variable_get('sign_in_with_twitter_button', 'dark'),
+    '#default_value' => variable_get('sign_in_with_twitter_button', 'Sign-in-with-Twitter-darker.png'),
     '#description' => t('Select the button to display to anonymous users.'),
     '#options' => array(
-      'dark' => theme_image($module_path .'Sign-in-with-Twitter-darker.png'),
-      'dark-small' => theme_image($module_path .'Sign-in-with-Twitter-darker-small.png'),
-      'light' => theme_image($module_path .'Sign-in-with-Twitter-lighter.png'),
-      'light-small' => theme_image($module_path .'Sign-in-with-Twitter-lighter-small.png')
+      'Sign-in-with-Twitter-darker.png' => theme_image($module_path .'Sign-in-with-Twitter-darker.png'),
+      'Sign-in-with-Twitter-darker-small.png' => theme_image($module_path .'Sign-in-with-Twitter-darker-small.png'),
+      'Sign-in-with-Twitter-lighter.png' => theme_image($module_path .'Sign-in-with-Twitter-lighter.png'),
+      'Sign-in-with-Twitter-lighter-small.png' => theme_image($module_path .'Sign-in-with-Twitter-lighter-small.png')
     ),
   );
   return system_settings_form($form);
