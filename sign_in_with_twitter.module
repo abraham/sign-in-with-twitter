@@ -7,15 +7,6 @@
  */
 
 /**
- * Valid permissions for this module
- * @return
- *   array An array of permissions for the uservoice module
- */
-function sign_in_with_twitter_perm() {
-  return array('administer sign_in_with_twitter', 'access sign_in_with_twitter');
-} // function uservoice_perm()
-
-/**
  * Implementation of hook_menu().
  */
 function sign_in_with_twitter_menu() {
@@ -70,7 +61,7 @@ function sign_in_with_twitter_form_alter(&$form, $form_state, $form_id) {
     if ('authenticated' == $_SESSION['sign_in_with_twitter_status']) {
       $twitter_user = $_SESSION['sign_in_with_twitter_user'];
       $form['name']['#default_value'] = $twitter_user->screen_name;
-      $form['welcome']['#value'] = t("Welcome @name. Please login to connect with your Twitter account or !register a new account.", array('@name' => ucfirst($twitter_user->screen_name), '!register' => l('create', 'user/register'))); 
+      $form['welcome']['#value'] = t("Welcome @name. Please login to connect with your Twitter account or !register a new account.", array('@name' => $twitter_user->screen_name, '!register' => l('create', 'user/register'))); 
       $form['welcome']['#weight'] = -1;
       $form['twitter'] = array('#type' => 'value', '#value' => $twitter_user);
       $form['twitter_status'] = array('#type' => 'value', '#value' => 'authenticated');
@@ -111,13 +102,14 @@ function sign_in_with_twitter_form_user_profile_form_alter(&$form, $form_state) 
   }
   else {
     unset($form['account']['pass']);
-    //TODO pull in username from api with JS.
     //TODO add remove connection link.
     $form['account']['sign_in_with_twitter_button'] = array(
       '#type' => 'item',
       '#title' => t('Sign in with Twitter'),
-      '#value' => t("Currently associated with Twitter user ID: @id", array('@id'=> $tid)),
+      '#value' => t("Currently associated with Twitter user: <span id='sign-in-with-twitter-id'>@id</span>", array('@id'=> $tid)),
     );
+    $js = '$.getJSON("http://twitter.com/users/show.json?user_id=9436992&callback=?", function(data){$("#sign-in-with-twitter-id").text(data.screen_name)})';
+    drupal_add_js($js, 'inline', 'footer');
   }
 }
 
@@ -129,7 +121,7 @@ function sign_in_with_twitter_form_user_register_alter(&$form, $form_state) {
     return;
   }
   $twitter_user = $_SESSION['sign_in_with_twitter_user'];
-  $form['welcome']['#value'] = t("Welcome @name. Please choose your username. If you already have an account !login.", array('@name' => ucfirst($twitter_user->screen_name), '!login' => l('login', 'user/login')));
+  $form['welcome']['#value'] = t("Welcome @name. Please choose your username. If you already have an account !login.", array('@name' => $twitter_user->screen_name, '!login' => l('login', 'user/login')));
   $form['welcome']['#weight'] = -1;
   $form['name']['#default_value'] = $twitter_user->screen_name;
   $form['#submit'][0] = 'sign_in_with_twitter_user_register_submit';
