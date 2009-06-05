@@ -25,6 +25,11 @@ function sign_in_with_twitter_confirm_remove(&$form_state) {
 function sign_in_with_twitter_confirm_remove_submit($form, &$form_state) {
   global $user;
   $tid = $form['#tid'];
-  _sign_in_with_twitter_remove_connection($tid);
+  if (_sign_in_with_twitter_remove_connection($tid)) {
+    drupal_set_message('notice', 'Twitter connection successfully broken.');
+  }
+  else {
+    drupal_set_message('warning', 'Something may have gone wrong. Try breaking connection with Twitter again.');
+  }
   $form_state['redirect'] = "user/{$user->uid}/edit"; 
 }

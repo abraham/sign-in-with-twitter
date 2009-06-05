@@ -11,13 +11,22 @@
  */
 function sign_in_with_twitter_admin() {
   $module_path = drupal_get_path('module', 'sign_in_with_twitter') .'/images/';
+  global $base_url;
   $form = array();
+  $form['sign_in_with_twitter_callback'] = array(
+    '#type' => 'item',
+    //'#readonly' => TRUE,
+    '#title' => t('Callback URL'),
+    '#value' => $base_url.'/sign-in-with-twitter/callback',
+    '#description' => t('Callback URL for the application settings on <a href="https://twitter.com/oauth_clients">https://twitter.com/oauth_clients</a>.'),
+  );
   $form['sign_in_with_twitter_consumer_key'] = array(
     '#type' => 'textfield',
     '#title' => t('Consumer key'),
     '#default_value' => variable_get('sign_in_with_twitter_consumer_key', ''),
     '#description' => t('Consumer key from your application settings page.'),
   );
+
   $form['sign_in_with_twitter_consumer_secret'] = array(
     '#type' => 'textfield',
     '#title' => t('Consumer secret'),

@@ -115,7 +115,7 @@ function sign_in_with_twitter_form_user_profile_form_alter(&$form, $form_state) 
     $form['account']['sign_in_with_twitter_button'] = array(
       '#type' => 'item',
       '#title' => t('Sign in with Twitter'),
-      '#value' => t("Currently associated with Twitter account: <span class='sign-in-with-twitter-id'>@id</span>. <a href=\"@remove\">remove</a>", array('@id'=> $tid,'@remove' => url('sign-in-with-twitter/remove'))),
+      '#value' => t("Currently associated with Twitter account: <span class='sign-in-with-twitter-id'>@id</span>. <a href=\"@remove\">Remove</a>", array('@id'=> $tid,'@remove' => url('sign-in-with-twitter/remove'))),
     );
   _sign_in_with_twitter_screen_name_js($tid);
   }
