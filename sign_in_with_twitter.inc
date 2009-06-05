@@ -11,7 +11,6 @@
  * Callback to get OAuth request token from Twitter and redirect user to start authentication process.
  */
 function sign_in_with_twitter_redirect() {
-  module_load_include('module', 'sign_in_with_twitter', 'OAuth.php');
   parse_str(_sign_in_with_twitter_make_api_call('https://twitter.com/oauth/request_token'));
   $_SESSION['sign_in_with_twitter_oauth_token'] = $oauth_token;
   $_SESSION['sign_in_with_twitter_oauth_token_secret'] = $oauth_token_secret;

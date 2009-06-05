@@ -34,6 +34,15 @@ function sign_in_with_twitter_menu() {
     'type' => MENU_CALLBACK,
     'file' => 'sign_in_with_twitter.inc',
   );
+  $items['sign-in-with-twitter/remove'] = array(
+    'title' => 'Remove Twitter account connection.',
+    'page callback' => 'drupal_get_form',
+    'description' => 'Break Twitter/Drupal account connection.',
+    'page arguments' => array('sign_in_with_twitter_confirm_remove'),
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+    'file' => 'sign_in_with_twitter.form.inc',
+  );
   return $items;
 } // function sign_in_with_twitter_menu().
 
@@ -106,11 +115,18 @@ function sign_in_with_twitter_form_user_profile_form_alter(&$form, $form_state) 
     $form['account']['sign_in_with_twitter_button'] = array(
       '#type' => 'item',
       '#title' => t('Sign in with Twitter'),
-      '#value' => t("Currently associated with Twitter user: <span id='sign-in-with-twitter-id'>@id</span>", array('@id'=> $tid)),
+      '#value' => t("Currently associated with Twitter account: <span class='sign-in-with-twitter-id'>@id</span>. <a href=\"@remove\">remove</a>", array('@id'=> $tid,'@remove' => url('sign-in-with-twitter/remove'))),
     );
-    $js = '$.getJSON("http://twitter.com/users/show.json?user_id=9436992&callback=?", function(data){$("#sign-in-with-twitter-id").text("@"+data.screen_name)})';
-    drupal_add_js($js, 'inline', 'footer');
+  _sign_in_with_twitter_screen_name_js($tid);
   }
+}
+
+/**
+ * Add javascript to the footer to replace tid with screen_name.
+ */
+function _sign_in_with_twitter_screen_name_js($tid) {
+  $js = '$.getJSON("http://twitter.com/users/show.json?user_id='. $tid .'&callback=?", function(data){$(".sign-in-with-twitter-id").text("@"+data.screen_name)})';
+  drupal_add_js($js, 'inline', 'footer');
 }
 
 /**
@@ -124,7 +140,7 @@ function sign_in_with_twitter_form_user_register_alter(&$form, $form_state) {
   $form['welcome']['#value'] = t("Welcome @name. Please choose your username. If you already have an account !login.", array('@name' => $twitter_user->screen_name, '!login' => l('login', 'user/login')));
   $form['welcome']['#weight'] = -1;
   $form['name']['#default_value'] = $twitter_user->screen_name;
-  $form['#submit'][0] = 'sign_in_with_twitter_user_register_submit';
+  $form['#submit'][] = 'sign_in_with_twitter_user_register_submit';
   $form['twitter'] = array('#type' => 'value', '#value' => $twitter_user);
   $form['twitter_status'] = array('#type' => 'value', '#value' => 'authenticated');
 }
@@ -145,39 +161,27 @@ function sign_in_with_twitter_user_login_submit($form, &$form_state) {
  * Process creating a Drupal user and logging them in.
  */
 function sign_in_with_twitter_user_register_submit($form, &$form_state) {
-  global $user;
-  $mail = $form_state['values']['mail'];
-  $name = $form_state['values']['name'];
+  global $user;  
+  $_SESSION['messages']['status'][0] = 'You have created a new account associated with your Twitter account.';
   $twitter_user = $form_state['values']['twitter'];
-  $module = 'sign_in_with_twitter';
-  // Register this new user.
-  $userinfo = array(
-    'name' => $name,
-    'pass' => user_password(),
-    'init' => $name,
-    'status' => 1,
-    "authname_$module" => $twitter_user->id,
-    'access' => time(),
-    'mail' => $mail,
-  );
-  $account = user_save('', $userinfo);
-  // Terminate if an error occured during user_save().
-  if (empty($account)) {
-    drupal_set_message(t("Error saving user account."), 'error');
-    return;
-  }
-  unset($_SESSION['sign_in_with_twitter_status']);
-  $user = $account;
-  watchdog('user', 'New external user: %name using module sign_in_with_twitter.', array('%name' => $name), WATCHDOG_NOTICE, l(t('edit'), 'user/'. $user->uid .'/edit'));
-  drupal_goto('user/'. $user->uid);
+  $user = $form_state['user'];
+  $form_state['redirect'] = "user/{$user->uid}";
+  user_set_authmaps($user, array('authmap_sign_in_with_twitter' => $twitter_user->id));
 } // sign_in_with_twitter_user_register_submit().
+
 /**
- * Return Twitter user ID associated with $uid.
+ * Return tid associated with uid from authmap.
  */
- 
 function sign_in_with_twitter_user_get_uid_authmaps($uid) {
   $result = db_query("SELECT authname FROM {authmap} WHERE uid = %d AND module = 'sign_in_with_twitter'", $uid);
   $authmaps = array();
   $has_rows = FALSE;
   return db_fetch_object($result)->authname;
 } // sign_in_with_twitter_user_get_uid_authmaps().
+
+/**
+ * Remove the authmap connection between the uid and tid.
+ */
+function _sign_in_with_twitter_remove_connection($tid) {
+  $result = db_query("DELETE FROM {authmap} WHERE authname = '%s' AND module = 'sign_in_with_twitter'", $tid);
+} // sign_in_with_twitter_redirect().
